@@ -21,10 +21,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Users
     Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/{id}', [UserController::class, 'show']);
     Route::post('/users', [UserController::class, 'store']);
     Route::put('/users/{id}', [UserController::class, 'update']);
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
     Route::post('/users/change-password', [UserController::class, 'changePassword']);
+
 
     // Projects
     Route::get('/projects', [ProjectController::class, 'index']);

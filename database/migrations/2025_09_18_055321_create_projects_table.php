@@ -29,6 +29,8 @@ return new class extends Migration {
             $table->integer('year_implemented')->nullable();
             $table->enum('status', ['ongoing','completed','terminated'])->default('ongoing');
             $table->unsignedTinyInteger('progress_percentage')->default(0);
+            $table->string('image_path')->nullable();
+            $table->string('document_path')->nullable();
             $table->foreignId('created_by')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });

@@ -12,7 +12,7 @@ class Project extends Model
         'contract_id','project_id','project_name','category','region','lgu','department',
         'implementing_office','fund_source','implementation_type','amount','revised_amount',
         'location','start_date','end_date','project_engineer','contractor','year_implemented',
-        'status','progress_percentage','created_by'
+        'status','progress_percentage','image_path','document_path','created_by',
     ];
 
     public function creator() {
