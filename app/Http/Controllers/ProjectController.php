@@ -14,102 +14,122 @@ class ProjectController extends Controller
      */
     public function index()
     {
+        $projects = Project::with('creator')->latest()->get();
+
         return response()->json(
-            Project::with('creator')->latest()->get()
+            $projects->map(function ($project) {
+                return $this->transformProject($project);
+            })
         );
     }
 
     /**
      * Store a newly created project
      */
-   public function store(Request $request)
-{
-    $v = $request->validate([
-        'project_id'      => 'required|string|unique:projects,project_id',
-        'project_name'    => 'required|string|max:255',
-        'status'          => 'nullable|in:ongoing,completed,terminated',
-        'amount'          => 'nullable|numeric',
-        'revised_amount'  => 'nullable|numeric',
-        'image'           => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        'document'        => 'nullable|file|mimes:pdf,doc,docx,xlsx|max:5120',
-    ]);
+    public function store(Request $request)
+    {
+        $v = $request->validate([
+            'project_id'      => 'sometimes|string|unique:projects,project_id',
+            'project_name'    => 'required|string|max:255',
+            'status'          => 'nullable|in:ongoing,completed,terminated',
+            'amount'          => 'nullable|numeric',
+            'revised_amount'  => 'nullable|numeric',
+            'image.*'         => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'document.*'      => 'nullable|file|mimes:pdf,doc,docx,xlsx|max:5120',
+        ]);
 
-    $data = $request->except(['image', 'document']);
-    $data['created_by'] = Auth::id();
+        $data = $request->except(['image', 'document']);
+        $data['created_by'] = Auth::id();
 
-    // ✅ Save image and add path to DB
-    if ($request->hasFile('image')) {
-        $path = $request->file('image')->store('projects/images', 'public');
-        $data['image_path'] = $path;
+        // Save multiple images
+        $imagePaths = [];
+        if ($request->hasFile('image')) {
+            foreach ($request->file('image') as $file) {
+                $imagePaths[] = $file->store('projects/images', 'public');
+            }
+        }
+        $data['image_path'] = !empty($imagePaths) ? json_encode($imagePaths) : null;
+
+        // Save multiple documents
+        $documentPaths = [];
+        if ($request->hasFile('document')) {
+            foreach ($request->file('document') as $file) {
+                $documentPaths[] = $file->store('projects/documents', 'public');
+            }
+        }
+        $data['document_path'] = !empty($documentPaths) ? json_encode($documentPaths) : null;
+
+        $project = Project::create($data);
+
+        return response()->json([
+            'message' => 'Project created',
+            'project' => $this->transformProject($project->fresh('creator'))
+        ], 201);
     }
-
-    // ✅ Save document and add path to DB
-    if ($request->hasFile('document')) {
-        $path = $request->file('document')->store('projects/documents', 'public');
-        $data['document_path'] = $path;
-    }
-
-    $project = Project::create($data);
-
-    return response()->json([
-        'message' => 'Project created',
-        'project' => $project
-    ], 201);
-}
-
 
     /**
      * Display a specific project
      */
     public function show($id)
     {
-        return response()->json(
-            Project::with('creator')->findOrFail($id)
-        );
+        $project = Project::with('creator')->findOrFail($id);
+
+        return response()->json($this->transformProject($project));
     }
 
     /**
      * Update the specified project
      */
     public function update(Request $request, $id)
-{
-    $project = Project::findOrFail($id);
+    {
+        $project = Project::findOrFail($id);
 
-    $v = $request->validate([
-        'project_name'    => 'sometimes|string|max:255',
-        'status'          => 'sometimes|in:ongoing,completed,terminated',
-        'amount'          => 'sometimes|numeric',
-        'revised_amount'  => 'sometimes|numeric',
-        'image'           => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-        'document'        => 'nullable|file|mimes:pdf,doc,docx,xlsx|max:5120',
-    ]);
+        $v = $request->validate([
+            'project_name'    => 'sometimes|string|max:255',
+            'status'          => 'sometimes|in:ongoing,completed,terminated',
+            'amount'          => 'sometimes|numeric',
+            'revised_amount'  => 'sometimes|numeric',
+            'image.*'         => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+            'document.*'      => 'nullable|file|mimes:pdf,doc,docx,xlsx|max:5120',
+        ]);
 
-    $data = $request->except(['image', 'document']);
+        $data = $request->except(['image', 'document']);
 
-    // ✅ Replace image if new one uploaded
-    if ($request->hasFile('image')) {
-        if ($project->image_path) {
-            Storage::disk('public')->delete($project->image_path);
+        // Replace images
+        if ($request->hasFile('image')) {
+            if ($project->image_path) {
+                foreach (json_decode($project->image_path, true) as $oldImage) {
+                    Storage::disk('public')->delete($oldImage);
+                }
+            }
+            $imagePaths = [];
+            foreach ($request->file('image') as $file) {
+                $imagePaths[] = $file->store('projects/images', 'public');
+            }
+            $data['image_path'] = json_encode($imagePaths);
         }
-        $data['image_path'] = $request->file('image')->store('projects/images', 'public');
-    }
 
-    // ✅ Replace document if new one uploaded
-    if ($request->hasFile('document')) {
-        if ($project->document_path) {
-            Storage::disk('public')->delete($project->document_path);
+        // Replace documents
+        if ($request->hasFile('document')) {
+            if ($project->document_path) {
+                foreach (json_decode($project->document_path, true) as $oldDoc) {
+                    Storage::disk('public')->delete($oldDoc);
+                }
+            }
+            $documentPaths = [];
+            foreach ($request->file('document') as $file) {
+                $documentPaths[] = $file->store('projects/documents', 'public');
+            }
+            $data['document_path'] = json_encode($documentPaths);
         }
-        $data['document_path'] = $request->file('document')->store('projects/documents', 'public');
+
+        $project->update($data);
+
+        return response()->json([
+            'message' => 'Project updated',
+            'project' => $this->transformProject($project->fresh('creator'))
+        ]);
     }
-
-    $project->update($data);
-
-    return response()->json([
-        'message' => 'Project updated',
-        'project' => $project
-    ]);
-}
-
 
     /**
      * Remove the specified project
@@ -118,17 +138,39 @@ class ProjectController extends Controller
     {
         $project = Project::findOrFail($id);
 
-        // Delete files if exist
         if ($project->image_path) {
-            Storage::disk('public')->delete($project->image_path);
+            foreach (json_decode($project->image_path, true) as $oldImage) {
+                Storage::disk('public')->delete($oldImage);
+            }
         }
 
         if ($project->document_path) {
-            Storage::disk('public')->delete($project->document_path);
+            foreach (json_decode($project->document_path, true) as $oldDoc) {
+                Storage::disk('public')->delete($oldDoc);
+            }
         }
 
         $project->delete();
 
         return response()->json(['message' => 'Project deleted']);
     }
+
+    /**
+     * Transform project to include full URLs
+     */
+    private function transformProject($project)
+{
+    $project->image_urls = $project->image_path
+        ? collect(json_decode($project->image_path, true))
+            ->map(fn($path) => url(Storage::url($path)))
+        : [];
+
+    $project->document_urls = $project->document_path
+        ? collect(json_decode($project->document_path, true))
+            ->map(fn($path) => url(Storage::url($path)))
+        : [];
+
+    return $project;
+}
+
 }

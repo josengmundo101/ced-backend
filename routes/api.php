@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/users/{id}', [UserController::class, 'destroy']);
     Route::post('/users/change-password', [UserController::class, 'changePassword']);
 
+    
 
     // Projects
     Route::get('/projects', [ProjectController::class, 'index']);
