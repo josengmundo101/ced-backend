@@ -9,11 +9,14 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
-        'contract_id','project_id','project_name','category','region','lgu','department',
-        'implementing_office','fund_source','implementation_type','amount','revised_amount',
-        'location','start_date','end_date','project_engineer','contractor','year_implemented',
-        'status','progress_percentage','image_path','document_path','created_by',
-    ];
+        'project_id', 'contract_id', 'project_name', 'category',
+        'region', 'lgu', 'department', 'implementing_office',
+        'fund_source', 'implementation_type', 'contractor',
+        'project_engineer', 'year_implemented', 'amount',
+        'revised_amount', 'location', 'start_date', 'end_date',
+        'status', 'image_path', 'document_path', 'created_by',
+];
+
 
     public function creator() {
         return $this->belongsTo(User::class, 'created_by');

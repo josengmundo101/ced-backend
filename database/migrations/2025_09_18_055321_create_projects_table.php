@@ -9,7 +9,7 @@ return new class extends Migration {
     {
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
-            $table->string('contract_id')->nullable();
+            $table->string('contract_id')->unique();
             $table->string('project_id')->unique(); // engineering identifier
             $table->string('project_name');
             $table->string('category')->nullable();
