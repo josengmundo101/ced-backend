@@ -30,7 +30,7 @@ class ProjectController extends Controller
     {
         $v = $request->validate([
             'project_id'      => 'sometimes|string|unique:projects,project_id',
-            'project_name'    => 'required|string|max:255',
+            'project_name'    => 'sometimes|string|max:255',
             'status'          => 'nullable|in:ongoing,completed,terminated',
             'amount'          => 'nullable|numeric',
             'revised_amount'  => 'nullable|numeric',
@@ -80,56 +80,87 @@ class ProjectController extends Controller
     /**
      * Update the specified project
      */
-    public function update(Request $request, $id)
-    {
-        $project = Project::findOrFail($id);
+public function update(Request $request, $id)
+{
+    $project = Project::findOrFail($id);
 
-        $v = $request->validate([
-            'project_name'    => 'sometimes|string|max:255',
-            'status'          => 'sometimes|in:ongoing,completed,terminated',
-            'amount'          => 'sometimes|numeric',
-            'revised_amount'  => 'sometimes|numeric',
-            'image.*'         => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
-            'document.*'      => 'nullable|file|mimes:pdf,doc,docx,xlsx|max:5120',
-        ]);
+    // ✅ Validate all fields for full update
+    $validated = $request->validate([
+        'project_id'           => 'sometimes|string|max:255',
+        'contract_id'          => 'nullable|string|max:255',
+        'project_name'         => 'sometimes|string|max:255',
+        'category'             => 'nullable|string|max:255',
+        'region'               => 'nullable|string|max:255',
+        'lgu'                  => 'nullable|string|max:255',
+        'department'           => 'nullable|string|max:255',
+        'implementing_office'  => 'nullable|string|max:255',
+        'fund_source'          => 'nullable|string|max:255',
+        'implementation_type'  => 'nullable|string|max:255',
+        'contractor'           => 'nullable|string|max:255',
+        'project_engineer'     => 'nullable|string|max:255',
+        'year_implemented'     => 'nullable|integer',
+        'amount'               => 'nullable|numeric',
+        'revised_amount'       => 'nullable|numeric',
+        'location'             => 'nullable|string|max:255',
+        'start_date'           => 'nullable|date',
+        'end_date'             => 'nullable|date',
+        'status'               => 'sometimes|in:ongoing,completed,terminated',
+        'image.*'              => 'nullable|image|mimes:jpg,jpeg,png|max:2048',
+        'document.*'           => 'nullable|file|mimes:pdf,doc,docx,xlsx|max:5120',
+    ]);
 
-        $data = $request->except(['image', 'document']);
+    // ✅ Copy non-file fields
+    $data = $request->except(['image', 'document']);
 
-        // Replace images
-        if ($request->hasFile('image')) {
-            if ($project->image_path) {
-                foreach (json_decode($project->image_path, true) as $oldImage) {
-                    Storage::disk('public')->delete($oldImage);
-                }
+    // ✅ Replace images only if new ones uploaded
+    if ($request->hasFile('image')) {
+        // Remove old images if exist
+        if ($project->image_path) {
+            foreach (json_decode($project->image_path, true) as $oldImage) {
+                Storage::disk('public')->delete($oldImage);
             }
-            $imagePaths = [];
-            foreach ($request->file('image') as $file) {
-                $imagePaths[] = $file->store('projects/images', 'public');
-            }
-            $data['image_path'] = json_encode($imagePaths);
         }
 
-        // Replace documents
-        if ($request->hasFile('document')) {
-            if ($project->document_path) {
-                foreach (json_decode($project->document_path, true) as $oldDoc) {
-                    Storage::disk('public')->delete($oldDoc);
-                }
-            }
-            $documentPaths = [];
-            foreach ($request->file('document') as $file) {
-                $documentPaths[] = $file->store('projects/documents', 'public');
-            }
-            $data['document_path'] = json_encode($documentPaths);
+        $imagePaths = [];
+        foreach ($request->file('image') as $file) {
+            $imagePaths[] = $file->store('projects/images', 'public');
         }
 
-        $project->update($data);
-
-        return response()->json([
-            'message' => 'Project updated',
-            'project' => $this->transformProject($project->fresh('creator'))
-        ]);
+        $data['image_path'] = json_encode($imagePaths);
+    } else {
+        // keep existing images if no new upload
+        $data['image_path'] = $project->image_path;
     }
+
+    // ✅ Replace documents only if new ones uploaded
+    if ($request->hasFile('document')) {
+        // Remove old documents if exist
+        if ($project->document_path) {
+            foreach (json_decode($project->document_path, true) as $oldDoc) {
+                Storage::disk('public')->delete($oldDoc);
+            }
+        }
+
+        $documentPaths = [];
+        foreach ($request->file('document') as $file) {
+            $documentPaths[] = $file->store('projects/documents', 'public');
+        }
+
+        $data['document_path'] = json_encode($documentPaths);
+    } else {
+        // keep existing documents if no new upload
+        $data['document_path'] = $project->document_path;
+    }
+
+    // ✅ Update the project record
+    $project->update($data);
+
+    return response()->json([
+        'message' => 'Project updated successfully',
+        'project' => $this->transformProject($project->fresh('creator')),
+    ]);
+}
+
 
     /**
      * Remove the specified project

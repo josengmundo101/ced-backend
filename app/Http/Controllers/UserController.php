@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Database\Eloquent\Model;
 
 class UserController extends Controller
 {
@@ -77,24 +78,29 @@ class UserController extends Controller
     }
 
     public function changePassword(Request $request)
-    {
-        $request->validate([
-            'old_password'=>'required|string',
-            'new_password'=>'required|string|min:8|confirmed',
-        ]);
+{
+    // Validate the request fields (these come from your frontend form)
+    $request->validate([
+        'old_password' => 'required|string',
+        'new_password' => 'required|string|min:8|confirmed',
+    ]);
 
-        $authUser = Auth::user();
-        if (!$authUser) return response()->json(['error'=>'Unauthorized'],401);
-
-        $user = User::find($authUser->id);
-        if (!Hash::check($request->old_password, $user->password)) {
-            return response()->json(['error'=>'Old password incorrect'],422);
-        }
-
-        $user->password = Hash::make($request->new_password);
-        $user->is_temporary_password = false;
-        $user->save();
-
-        return response()->json(['message'=>'Password changed']);
+    $user = Auth::user();
+    if (!$user) {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    // Check if the old password matches the hashed one in the DB
+    if (!Hash::check($request->old_password, $user->password)) {
+        return response()->json(['error' => 'Incorrect old password'], 422);
+    }
+
+    // Update the password
+    $user->password = Hash::make($request->new_password);
+    $user->is_temporary_password = false;
+    $user->save();
+
+    return response()->json(['message' => 'Password changed successfully']);
+}
+
 }
