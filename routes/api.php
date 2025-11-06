@@ -14,6 +14,7 @@ Route::get('/user', function (Request $request) {
 // Public
 Route::post('/login', [AuthController::class, 'login']);
 
+
 // Protected
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -35,4 +36,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/projects/{id}', [ProjectController::class, 'show']);
     Route::put('/projects/{id}', [ProjectController::class, 'update']);
     Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);
+
 });
