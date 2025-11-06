@@ -1,51 +1,45 @@
-# -----------------------------
-# 1. Base PHP image with FPM
-# -----------------------------
+# Use official PHP image with FPM
 FROM php:8.2-fpm
 
-# -----------------------------
-# 2. Install system dependencies
-# -----------------------------
+# Install required system dependencies
 RUN apt-get update && apt-get install -y \
-    git curl zip unzip libpng-dev libjpeg-dev libfreetype6-dev libonig-dev libxml2-dev libzip-dev \
+    git \
+    curl \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    zip \
+    unzip \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql pgsql mbstring exif pcntl bcmath gd zip \
+    && docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd zip \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# -----------------------------
-# 3. Copy Composer from official image
-# -----------------------------
+# Copy Composer
 COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
 
-# -----------------------------
-# 4. Set working directory
-# -----------------------------
+# Set working directory
 WORKDIR /var/www
 
-# -----------------------------
-# 5. Copy project files
-# -----------------------------
+# Copy all source code
 COPY . .
 
-# -----------------------------
-# 6. Install PHP dependencies
-# -----------------------------
-RUN composer install --no-dev --optimize-autoloader
+# Install dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-# -----------------------------
-# 7. Cache Laravel configuration
-# -----------------------------
-RUN php artisan config:clear && php artisan cache:clear && php artisan route:clear && php artisan view:clear
-RUN php artisan config:cache && php artisan route:cache && php artisan view:cache || true
+# Cache Laravel configs safely (Render has no .env until runtime)
+RUN php artisan config:clear || true && \
+    php artisan cache:clear || true && \
+    php artisan route:clear || true && \
+    php artisan view:clear || true
 
-# -----------------------------
-# 8. Fix permissions
-# -----------------------------
+# Permissions fix for storage
 RUN chown -R www-data:www-data storage bootstrap/cache
 
-# -----------------------------
-# 9. Expose port & run app
-# -----------------------------
+# Expose Laravel's port
 EXPOSE 8000
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Start the Laravel API server
+CMD php artisan serve --host=0.0.0.0 --port=8000
