@@ -5,18 +5,18 @@ FROM php:8.2-fpm
 RUN apt-get update && apt-get install -y \
     git \
     curl \
-    libpng-dev \
-    libjpeg-dev \
-    libfreetype6-dev \
     zip \
     unzip \
+    libpq-dev \
+    libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd zip \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
+ && docker-php-ext-configure gd --with-freetype --with-jpeg \
+ && docker-php-ext-install pdo pdo_pgsql gd mbstring exif pcntl bcmath zip \
+ && apt-get clean && rm -rf /var/lib/apt/lists/*
 # Copy Composer
 COPY --from=composer:2.6 /usr/bin/composer /usr/bin/composer
 
@@ -30,9 +30,9 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
 # Cache Laravel configs safely (Render has no .env until runtime)
-RUN php artisan config:clear || true && \
-    php artisan cache:clear || true && \
-    php artisan route:clear || true && \
+RUN php artisan config:clear || true \
+    php artisan cache:clear || true \
+    php artisan route:clear || true \
     php artisan view:clear || true
 
 # Permissions fix for storage
