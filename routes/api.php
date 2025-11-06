@@ -5,8 +5,6 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProjectController;
-use Illuminate\Support\Facades\DB; // Add this import
-use Illuminate\Support\Facades\Log;
 
 
 Route::get('/user', function (Request $request) {
@@ -16,15 +14,6 @@ Route::get('/user', function (Request $request) {
 // Public
 Route::post('/login', [AuthController::class, 'login']);
 
-Route::any('/test-db', function () {
-    try {
-        DB::connection()->getPdo();
-        return response()->json(['status' => '✅ DB connection OK']);
-    } catch (\Throwable $e) {
-        Log::error('DB connection failed: ' . $e->getMessage());
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-});
 
 // Protected
 Route::middleware('auth:sanctum')->group(function () {
