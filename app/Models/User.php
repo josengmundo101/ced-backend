@@ -11,23 +11,34 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name','email','password','role_id','is_temporary_password'
+        'name',
+        'email',
+        'password',
+        'role_id',
+        'is_temporary_password',
     ];
 
     protected $hidden = [
-        'password','remember_token'
+        'password',
+        'remember_token',
     ];
 
-    public function role() {
+    protected $casts = [
+        'is_temporary_password' => 'boolean',
+    ];
+
+    public function role()
+    {
         return $this->belongsTo(Role::class);
     }
 
-    public function projects() {
+    public function projects()
+    {
         return $this->hasMany(Project::class, 'created_by');
     }
 
-    public function isSuperAdmin() {
-        // change email check to whatever you seed
-        return $this->email === 'superadmin@example.com';
+    public function isSuperAdmin()
+    {
+        return $this->email === 'superadmin@ced.com';
     }
 }

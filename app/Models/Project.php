@@ -9,13 +9,32 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
-        'project_id', 'contract_id', 'project_name', 'category',
-        'region', 'lgu', 'department', 'implementing_office',
-        'fund_source', 'implementation_type', 'contractor',
-        'project_engineer', 'year_implemented', 'amount',
-        'revised_amount', 'location', 'start_date', 'end_date',
-        'status', 'image_path', 'document_path', 'created_by',
+    'project_id',
+    'contract_id',
+    'project_name',
+    'category',
+    'region',
+    'lgu',
+    'department',
+    'implementing_office',
+    'fund_source',
+    'implementation_type',
+    'contractor',
+    'project_engineer',
+    'year_implemented',
+    'amount',
+    'revised_amount',
+    'location',
+    'start_date',
+    'end_date',
+    'status',
+    'remarks',   // <— ADD THIS
+    'actual_end_date',
+    'image_path',
+    'document_path',
+    'created_by',
 ];
+
 
 
     public function creator() {
