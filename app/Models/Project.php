@@ -1,5 +1,6 @@
 <?php
 namespace App\Models;
+use App\Models\ProjectDocument;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,7 +10,6 @@ class Project extends Model
     use HasFactory;
 
     protected $fillable = [
-    'project_id',
     'contract_id',
     'project_name',
     'category',
@@ -30,8 +30,6 @@ class Project extends Model
     'status',
     'remarks',   // <— ADD THIS
     'actual_end_date',
-    'image_path',
-    'document_path',
     'created_by',
 ];
 
@@ -39,5 +37,10 @@ class Project extends Model
 
     public function creator() {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+        public function documents()
+    {
+        return $this->hasMany(ProjectDocument::class);
     }
 }

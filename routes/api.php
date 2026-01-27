@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectDocumentController;
 
 
 Route::get('/user', function (Request $request) {
@@ -34,8 +35,18 @@ Route::middleware('auth:sanctum')->group(function () {
     // Projects
     Route::get('/projects', [ProjectController::class, 'index']);
     Route::post('/projects', [ProjectController::class, 'store']);
-    Route::get('/projects/{id}', [ProjectController::class, 'show']);
+    Route::get('/projects/{id}', [ProjectController::class, 'show']); 
     Route::put('/projects/{id}', [ProjectController::class, 'update']);
     Route::delete('/projects/{id}', [ProjectController::class, 'destroy']);
 
+    // List documents of a project
+    Route::get('/projects/{project}/documents',[ProjectDocumentController::class, 'index']);
+    // Upload document to a project
+    Route::post('/projects/{project}/documents',[ProjectDocumentController::class, 'store']);
+    // Download a document
+    Route::get('/documents/{document}/download',[ProjectDocumentController::class, 'download']);
+    // Delete a document
+    Route::delete('/documents/{document}',[ProjectDocumentController::class, 'destroy']);
+
+    
 });
